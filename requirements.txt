@@ -1,0 +1,5 @@
+websocket-client
+openai
+pyaudio
+keyboard
+python-dotenv
