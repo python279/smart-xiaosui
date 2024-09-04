@@ -65,7 +65,7 @@ class AudioRecorder:
             if callback:
                callback(audio_data)
         except Exception as e:
-            logger.error("录音异常:", e)
+            logger.error(f"录音异常: {e}")
 
     def stop_recording(self):
         if self.is_recording:

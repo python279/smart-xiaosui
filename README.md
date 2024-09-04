@@ -24,6 +24,27 @@ cp .env.example .env
 
 打开 https://console.xfyun.cn/services/iat 申请接口认证信息，将 APPID、APP_KEY、API_SECRET 填入 .env 文件中。
 
+```text
+asr_app_id=xxx
+asr_api_key=xxx
+asr_api_secret=xxx
+```
+
+打开 https://console.xfyun.cn/services/tts 申请接口认证信息，将 APPID、APP_KEY、API_SECRET 填入 .env 文件中。
+
+```text
+tts_app_id=xxx
+tts_api_key=xxx
+tts_api_secret=xxx
+```
+
+打开 https://console.xfyun.cn/services/bm3 申请接口认证信息，将 APIPassword 替换 .env 中的 openai_api_key。
+
+```text
+openai_url=https://spark-api-open.xf-yun.com/v1
+openai_model=generalv3
+openai_api_key=xxx
+```
 
 # 运行
 
