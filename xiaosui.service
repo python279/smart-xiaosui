@@ -1,0 +1,14 @@
+[Unit]
+Description=xiaosui
+After=network.target network-online.target
+
+[Service]
+ExecStart=/home/lhq/xiaosui/.venv/bin/python main.py
+WorkingDirectory=/home/lhq/xiaosui
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=lhq
+
+[Install]
+WantedBy=multi-user.target

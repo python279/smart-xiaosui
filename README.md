@@ -10,7 +10,7 @@ pip3.11 install -r requirements.txt
 # 树莓派 OS 开发环境配置
 
 ```shell
-sudo apt install portaudio19-dev
+sudo apt install portaudio19-dev python3-dev libopenblas0
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip3.11 install -r requirements.txt

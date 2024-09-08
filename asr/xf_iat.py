@@ -25,7 +25,11 @@ logger = logging.getLogger()
 
 
 class ASRClient:
-    def __init__(self, app_id: str, api_key: str, api_secret: str):
+    def __init__(self, ws_connect_timeout: Union[int, str], app_id: str, api_key: str, api_secret: str):
+        if isinstance(ws_connect_timeout, str):
+            self.ws_connect_timeout = int(ws_connect_timeout)
+        else:
+            self.ws_connect_timeout = ws_connect_timeout
         self.app_id: str = app_id
         self.api_key: str = api_key
         self.api_secret: str = api_secret
@@ -110,7 +114,7 @@ class ASRClient:
         self.ws = ws
 
     def connect(self) -> None:
-        websocket.enableTrace(True)
+        websocket.enableTrace(False)
         ws = websocket.WebSocketApp(self.create_url(),
                                     on_message=self.on_message,
                                     on_error=self.on_error,
@@ -118,12 +122,12 @@ class ASRClient:
                                     on_open=self.on_open)
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
-    def send_audio(self, audio_data: bytes, rate=16000) -> None:
+    def send_audio(self, audio_data: bytes, rate: int = 16000) -> None:
         self.start_daemon()
-        for i in range(10):
+        for i in range(self.ws_connect_timeout):
             if not self.is_connected:
                 logger.info("WebSocket is not connected, waiting...")
-                time.sleep(0.2)
+                time.sleep(1)
             else:
                 break
 
@@ -131,7 +135,7 @@ class ASRClient:
             raise Exception("WebSocket is not connected")
 
         frame_size: int = 1280  # 每一帧的音频大小
-        intervel = 0.08  # 发送音频间隔(单位:s)
+        intervel = 0.04  # 发送音频间隔(单位:s)
         status: int = STATUS_FIRST_FRAME  # 音频的状态信息
 
         total_bytes: int = len(audio_data)
@@ -171,7 +175,7 @@ class ASRClient:
                 d: dict = {
                     "data": {
                         "status": 2,
-                        "format": "audio/L16;rate=16000",
+                        "format": f"audio/L16;rate={rate}",
                         "audio": str(base64.b64encode(buf), 'utf-8'),
                         "encoding": "raw"
                     }
@@ -183,7 +187,7 @@ class ASRClient:
             # 模拟音频采样间隔
             time.sleep(intervel)
 
-    def __call__(self, audio_data: Union[bytes, Any], rate=16000, timeout=20) -> str:
+    def __call__(self, audio_data: Union[bytes, Any], rate: int = 16000, timeout: int = 20) -> str:
         if isinstance(audio_data, bytes):
             self.result = ""
             self.once_done = False
@@ -214,11 +218,12 @@ if __name__ == '__main__':
     logger.addHandler(handler)
 
     for i in range(5):
-        asr = ASRClient(os.getenv("asr_app_id"),
+        asr = ASRClient(os.getenv("asr_ws_connect_timeout"),
+                        os.getenv("asr_app_id"),
                         os.getenv("asr_api_key"),
                         os.getenv("asr_api_secret"))
 
         with open("samples/iat_pcm_16k.pcm", "rb") as f:
-            result = asr(f, rate=16000)
+            result = asr(f, rate=16000, timeout=int(os.getenv("asr_request_timeout")))
             print(result)
         time.sleep(1)

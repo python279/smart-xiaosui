@@ -22,7 +22,11 @@ logger = logging.getLogger()
 
 
 class TTSClient:
-    def __init__(self, app_id: str, api_key: str, api_secret: str):
+    def __init__(self, ws_connect_timeout: Union[int, str], app_id: str, api_key: str, api_secret: str):
+        if isinstance(ws_connect_timeout, str):
+            self.ws_connect_timeout = int(ws_connect_timeout)
+        else:
+            self.ws_connect_timeout = ws_connect_timeout
         self.app_id = app_id
         self.api_key = api_key
         self.api_secret = api_secret
@@ -99,7 +103,7 @@ class TTSClient:
         self.ws = ws
 
     def connect(self) -> None:
-        websocket.enableTrace(True)
+        websocket.enableTrace(False)
         ws = websocket.WebSocketApp(self.create_url(),
                                     on_message=self.on_message,
                                     on_error=self.on_error,
@@ -107,14 +111,14 @@ class TTSClient:
                                     on_open=self.on_open)
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
-    def send_text(self, text: str) -> None:
+    def send_text(self, text: str, rate: int = 16000) -> None:
         if not self.thread_loop:
             self.start_daemon()
 
-        for i in range(10):
+        for i in range(self.ws_connect_timeout):
             if not self.is_connected:
                 logger.info("WebSocket is not connected, waiting...")
-                time.sleep(0.2)
+                time.sleep(1)
             else:
                 break
 
@@ -123,7 +127,7 @@ class TTSClient:
 
         data = {
             "common": {"app_id": self.app_id},
-            "business": {"aue": "raw", "auf": "audio/L16;rate=16000", "vcn": "aisjinger", "tte": "utf8", "speed": 80},
+            "business": {"aue": "raw", "auf": f"audio/L16;rate={rate}", "vcn": "aisjinger", "tte": "utf8", "speed": 80},
             "data": {
                 "status": 2,
                 "text": str(base64.b64encode(text.encode('utf-8')), "UTF8")
@@ -131,9 +135,9 @@ class TTSClient:
         }
         self.ws.send(json.dumps(data))
 
-    def __call__(self, text: str, callback: Callable) -> None:
+    def __call__(self, text: str, callback: Callable, rate: int = 16000) -> None:
         self.callback = callback
-        self.send_text(text)
+        self.send_text(text, rate=rate)
 
 
 if __name__ == "__main__":
@@ -158,12 +162,12 @@ if __name__ == "__main__":
              "依托讯飞超脑2030，面向物理世界、数字世界和元宇宙，帮助开发者构建虚实结合、多模态交互、\
               智能运动、模型训练、软硬一体、大小脑协同的实体机器人与虚拟数字人。"]
     for text in texts:
-        tts = TTSClient(os.getenv("tts_app_id"),
+        tts = TTSClient(os.getenv("tts_ws_connect_timeout"),
+                        os.getenv("tts_app_id"),
                         os.getenv("tts_api_key"),
                         os.getenv("tts_api_secret"))
-        tts(text, audio_play)
+        tts(text, audio_play, rate=16000)
         time.sleep(30)
 
-    audio_stream.stop_stream()
     audio_stream.close()
     p.terminate()

@@ -3,3 +3,9 @@ openai
 pyaudio
 keyboard
 python-dotenv
+gpiozero
+rpi.gpio
+pigpio
+spidev
+lgpio
+git+https://github.com/larsimmisch/pyalsaaudio.git
