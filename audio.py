@@ -19,7 +19,10 @@ logger = logging.getLogger()
 
 
 class AudioPlayer:
-    def __init__(self, format=pyaudio.paInt16, channels=1, rate=16000):
+    def __init__(self, format: int = pyaudio.paInt16, channels: int = 1, rate: int = 16000):
+        self.format = format
+        self.channels = channels
+        self.rate = rate
         if alsaaudio_available:
             self.stream = alsaaudio.PCM(alsaaudio.PCM_PLAYBACK, channels=channels,
                                         rate=rate, format=pyaudio_alsaaudio_foramt_mapping[format],
@@ -39,7 +42,7 @@ class AudioPlayer:
 
     def play(self, audio_data: bytes) -> None:
         offset = 0
-        chunk = 128
+        chunk = 128 * self.channels
         while True:
             data = audio_data[offset:offset + chunk]
             offset += chunk
@@ -49,7 +52,7 @@ class AudioPlayer:
 
 
 class AudioRecorder:
-    def __init__(self, format=pyaudio.paInt16, channels=1, rate=8000, chunk=1024):
+    def __init__(self, format: int = pyaudio.paInt16, channels: int = 1, rate: int = 8000, chunk: int = 1024):
         # 设置音频参数
         self.format = format
         self.channels = channels
