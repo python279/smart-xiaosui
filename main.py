@@ -9,7 +9,10 @@ from typing import Callable
 from asr.xf_iat import ASRClient
 from tts.xf_tts import TTSClient
 from chat.chat import Chat
+from screen.screen import Screen
 from audio import AudioPlayer, AudioRecorder
+from PIL import Image
+from threading import Thread
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -21,6 +24,9 @@ logger.addHandler(handler)
 
 if __name__ == "__main__":
     load_dotenv()
+
+    # 初始化屏幕
+    screen = Screen(simulate=(os.getenv("simulate_screen") == 'true'))
 
     if os.getenv("button_source") == "keyboard":
         import keyboard
@@ -78,21 +84,59 @@ if __name__ == "__main__":
                         os.getenv("tts_api_secret"))
         tts(assistent_response, audio_player.play, rate=16000)
 
-    if os.getenv("button_source") == "keyboard":
-        # 监听键盘事件，触发或者停止录音
-        keyboard.on_press_key('space', lambda _: _start_recording(audio_recorder, _audio_callback))
-        keyboard.on_release_key('space', lambda _: _stop_recording(audio_recorder))
-        print("准备好录音，按‘空格’键开始录音，释放’空格‘键停止录音。")
-    else:
-        # 监听按钮事件，触发或者停止录音
-        button = Button(int(os.getenv("button_gpio_pin")))
-        button.when_pressed = lambda: _start_recording(audio_recorder, _audio_callback)
-        button.when_released = lambda: _stop_recording(audio_recorder)
-        print("准备好录音，按‘对话’键开始录音，释放’对话‘键停止录音。")
+    def app():
+        if os.getenv("button_source") == "keyboard":
+            keyboard_press_hook = None
+            keyboard_release_hook = None
+        else:
+            button = None
+
+        while True:
+            # 通过socket判断网络是否连接
+            is_connected = (os.system("ping -c 2 114.114.114.114 2>&1 > /dev/null") == 0)
+            if not is_connected:
+                if os.getenv("button_source") == "keyboard":
+                    # 取消键盘事件监听
+                    if keyboard_press_hook:
+                        keyboard_press_hook.remove_()
+                        keyboard_press_hook = None
+                    if keyboard_release_hook:
+                        keyboard_release_hook.remove_()
+                        keyboard_release_hook = None
+                else:
+                    # 取消button事件监听
+                    if button:
+                        button.close()
+                        button = None
+
+                # 显示网络连接中
+                screen.show_gif("screen/image/connecting.gif")
+                time.sleep(1)
+            else:
+                if os.getenv("button_source") == "keyboard":
+                    # 监听键盘事件，触发或者停止录音
+                    if keyboard_press_hook is None:
+                        keyboard_press_hook = keyboard.on_press_key('space', lambda _: _start_recording(audio_recorder, _audio_callback))
+                    if keyboard_release_hook is None:
+                        keyboard_release_hook = keyboard.on_release_key('space', lambda _: _stop_recording(audio_recorder))
+                    #print("准备好录音，按‘空格’键开始录音，释放’空格‘键停止录音。")
+                else:
+                    # 监听按钮事件，触发或者停止录音
+                    if button is None:
+                        button = Button(int(os.getenv("button_gpio_pin")))
+                        button.when_pressed = lambda: _start_recording(audio_recorder, _audio_callback)
+                        button.when_released = lambda: _stop_recording(audio_recorder)
+                        print("准备好录音，按‘对话’键开始录音，释放’对话‘键停止录音。")
+
+                # 显示提示图片，按下按钮开始对话
+                screen.show_gif("screen/image/press_here.gif")
+                time.sleep(1)
+
+    app_thread = Thread(target=app)
+    app_thread.start()
 
     try:
+        screen.main_loop()
         pause()
-        while True:
-            time.sleep(5)
     finally:
         pass

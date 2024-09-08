@@ -26,7 +26,7 @@ class Chat:
                     "content": user_prompt
                 }
             ],
-            temperature=0.1,
+            temperature=0.5,
             max_tokens=500 + len(user_prompt) + len(system_prompt)
         )
         return completion.choices[0].message.content
