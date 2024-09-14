@@ -93,7 +93,6 @@ class ASRClient:
             else:
                 data: list = response["data"]["result"]["ws"]
                 logger.info(f"sid:{sid} call success!, data is: {json.dumps(data, ensure_ascii=False)}")
-
                 self.result += "".join(w["w"] for i in data for w in i["cw"])
                 self.once_done = True
         except Exception as e:
@@ -101,12 +100,17 @@ class ASRClient:
 
     def on_error(self, ws: websocket.WebSocketApp, error: Exception) -> None:
         logger.error(f"### error ###\n{error}")
+        self.is_connected = False
+        self.thread_loop = None
+        self.ws = None
+        #self.start_daemon()
 
     def on_close(self, ws: websocket.WebSocketApp, a: Any, b: Any) -> None:
         logger.info(f"### closed ###\na={a}\nb={b}")
         self.is_connected = False
         self.thread_loop = None
         self.ws = None
+        #self.start_daemon()
 
     def on_open(self, ws: websocket.WebSocketApp) -> None:
         logger.info(f"### connected ###")
@@ -123,7 +127,6 @@ class ASRClient:
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     def send_audio(self, audio_data: bytes, rate: int = 16000) -> None:
-        self.start_daemon()
         for i in range(self.ws_connect_timeout):
             if not self.is_connected:
                 logger.info("WebSocket is not connected, waiting...")
@@ -132,7 +135,7 @@ class ASRClient:
                 break
 
         if not self.is_connected:
-            raise Exception("WebSocket is not connected")
+            return
 
         frame_size: int = 1280  # 每一帧的音频大小
         intervel = 0.04  # 发送音频间隔(单位:s)
@@ -217,12 +220,11 @@ if __name__ == '__main__':
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
+    asr = ASRClient(os.getenv("asr_ws_connect_timeout"),
+                    os.getenv("asr_app_id"),
+                    os.getenv("asr_api_key"),
+                    os.getenv("asr_api_secret"))
     for i in range(5):
-        asr = ASRClient(os.getenv("asr_ws_connect_timeout"),
-                        os.getenv("asr_app_id"),
-                        os.getenv("asr_api_key"),
-                        os.getenv("asr_api_secret"))
-
         with open("samples/iat_pcm_16k.pcm", "rb") as f:
             result = asr(f, rate=16000, timeout=int(os.getenv("asr_request_timeout")))
             print(result)

@@ -32,6 +32,7 @@ class TTSClient:
         self.api_secret = api_secret
         self.thread_loop = None
         self.is_connected: bool = False
+        self.once_done = False
         self.callback: Optional[Callable] = None
         self.start_daemon()
 
@@ -69,6 +70,8 @@ class TTSClient:
     def on_message(self, ws: websocket.WebSocketApp, message: str) -> None:
         try:
             message = json.loads(message)
+            if message == '':
+                return
             code = message["code"]
             sid = message["sid"]
             audio = message["data"].get("audio", "")
@@ -83,6 +86,7 @@ class TTSClient:
                 err_msg = message["message"]
                 logger.error(f"sid:{sid} call error:{err_msg} code is:{code}")
             else:
+                self.once_done = True
                 if self.callback:
                     self.callback(audio)
         except Exception as e:
@@ -90,12 +94,17 @@ class TTSClient:
 
     def on_error(self, ws: websocket.WebSocketApp, error: Exception) -> None:
         logger.error(f"### error ###\n{error}")
+        self.is_connected = False
+        self.thread_loop = None
+        self.ws = None
+        #self.start_daemon()
 
     def on_close(self, ws: websocket.WebSocketApp, a: Any, b: Any) -> None:
         logger.info(f"### closed ###\na={a}\nb={b}")
         self.is_connected = False
         self.thread_loop = None
         self.ws = None
+        #self.start_daemon()
 
     def on_open(self, ws: websocket.WebSocketApp) -> None:
         logger.info(f"### connected ###")
@@ -112,9 +121,6 @@ class TTSClient:
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
     def send_text(self, text: str, rate: int = 16000) -> None:
-        if not self.thread_loop:
-            self.start_daemon()
-
         for i in range(self.ws_connect_timeout):
             if not self.is_connected:
                 logger.info("WebSocket is not connected, waiting...")
@@ -127,7 +133,7 @@ class TTSClient:
 
         data = {
             "common": {"app_id": self.app_id},
-            "business": {"aue": "raw", "auf": f"audio/L16;rate={rate}", "vcn": "aisjinger", "tte": "utf8", "speed": 80},
+            "business": {"aue": "raw", "auf": f"audio/L16;rate={rate}", "vcn": "x4_lingxiaoxuan_en_v2", "tte": "utf8", "speed": 50},
             "data": {
                 "status": 2,
                 "text": str(base64.b64encode(text.encode('utf-8')), "UTF8")
@@ -135,9 +141,16 @@ class TTSClient:
         }
         self.ws.send(json.dumps(data))
 
-    def __call__(self, text: str, callback: Callable, rate: int = 16000) -> None:
+    def __call__(self, text: str, callback: Callable, rate: int = 16000, timeout: int = 10) -> None:
         self.callback = callback
         self.send_text(text, rate=rate)
+
+        # 等待 ASR 完成
+        for i in range(int(timeout)):
+            if not self.once_done:
+                time.sleep(1)
+            else:
+                break
 
 
 if __name__ == "__main__":

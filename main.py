@@ -17,7 +17,7 @@ from threading import Thread
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter('%(asctime)s - %(threadName)s - %(filename)s - %(lineno)d - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
@@ -44,7 +44,16 @@ if __name__ == "__main__":
                      '你还可以提示用户拍一张风景照片，然后你可以介绍一下风景的地点。\n'
                      '你可以表现的很随和，尽量满足用户的需求。\n'
                      '当碰到你不懂的问题时，你可以说“我不懂”，然后再次尝试回答。\n'
-                     '你回答的内容必须符合中国的法律和道德约束，不得损害他人利益，要保护青少年身心健康，切记！\n')
+                     '你回答的内容必须符合中国的法律和道德约束，不得损害他人利益，要保护青少年身心健康，切记！\n'
+                     '你回答的内容不要包含暴力、色情、赌博、恐怖等内容，要保持中立、客观、公正。\n'
+                     '你回答的内容要符合事实真相，不得散布谣言，不得违反国家政策法规。\n'
+                     '你回答的内容要尊重用户隐私，不得泄露用户个人信息。\n'
+                     '你回答的内容要尊重用户权益，不得误导用户，不得欺诈用户。\n'
+                     '你回答的内容要尊重用户感情，不得侮辱、辱骂、挑衅用户。\n'
+                     '你回答的内容要尊重用户智商，不得恶搞、恶意调侃用户。\n'
+                     '你回答的内容要符合社会主意核心价值观，不得违背社会公序良俗。\n'
+                     '你不要把自己当成一个认知智能模型，你要把自己当成一个聪明、热情、谦虚的人。\n'
+                     '你不要告诉我你是一个认知智能模型，你要把自己当成一个聪明、热情、谦虚的人。\n')
 
     # 初始化音频播放器
     audio_player = AudioPlayer(channels=1, rate=16000)
@@ -52,10 +61,23 @@ if __name__ == "__main__":
     # 初始化音频录制器
     audio_recorder = AudioRecorder(channels=1, rate=16000)
 
+    # asr
+    asr = None
+
+    # tts
+    tts = None
+
     # 触发录音
     def _start_recording(audio_recorder: AudioRecorder, callback: Callable = None) -> None:
         if not audio_recorder.is_recording:
-            threading.Thread(target=audio_recorder.start_recording, args=(callback,)).start()
+            global asr
+            global tts
+            asr = ASRClient(os.getenv("asr_ws_connect_timeout"),
+                            os.getenv("asr_app_id"),
+                            os.getenv("asr_api_key"),
+                            os.getenv("asr_api_secret"))
+            t = threading.Thread(target=audio_recorder.start_recording, args=(callback,))
+            t.start()
 
     # 停止录音
     def _stop_recording(audio_recorder: AudioRecorder) -> None:
@@ -65,23 +87,23 @@ if __name__ == "__main__":
 
     # 录音回调函数，核心部分
     def _audio_callback(audio_bytes: bytes) -> None:
+        global asr
+        global tts
+
         # 语音转文字
-        asr = ASRClient(os.getenv("asr_ws_connect_timeout"),
-                        os.getenv("asr_app_id"),
-                        os.getenv("asr_api_key"),
-                        os.getenv("asr_api_secret"))
         user_prompt = asr(audio_bytes, rate=16000, timeout=int(os.getenv("asr_request_timeout")))
         if user_prompt == "":
             return
+
+        tts = TTSClient(os.getenv("tts_ws_connect_timeout"),
+                        os.getenv("tts_app_id"),
+                        os.getenv("tts_api_key"),
+                        os.getenv("tts_api_secret"))
 
         # 文字对话
         assistent_response = chat(system_prompt, user_prompt)
 
         # 文字转语音并播放
-        tts = TTSClient(os.getenv("tts_ws_connect_timeout"),
-                        os.getenv("tts_app_id"),
-                        os.getenv("tts_api_key"),
-                        os.getenv("tts_api_secret"))
         tts(assistent_response, audio_player.play, rate=16000)
 
     def app():
