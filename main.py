@@ -193,37 +193,42 @@ if __name__ == "__main__":
 
         key_event_queue = Queue()
 
-        button_hooks = []
         if os.getenv("button_source") == "keyboard":
-            for key, value in key_keyboard.items():
-                keyboard.add_hotkey(value, lambda: key_event_queue.put(KeyEvent[key + "_PRESSED"]))
-                keyboard.add_hotkey(value, lambda: key_event_queue.put(KeyEvent[key + "_RELEASED"]), trigger_on_release=True)
+            keyboard.add_hotkey(key_keyboard["ENTER"], lambda: key_event_queue.put("ENTER_PRESSED"))
+            keyboard.add_hotkey(key_keyboard["ENTER"], lambda: key_event_queue.put("ENTER_RELEASED"),
+                                trigger_on_release=True)
+            keyboard.add_hotkey(key_keyboard["UP"], lambda: key_event_queue.put("UP_PRESSED"))
+            keyboard.add_hotkey(key_keyboard["UP"], lambda: key_event_queue.put("UP_RELEASED"),
+                                trigger_on_release=True)
+            keyboard.add_hotkey(key_keyboard["DOWN"], lambda: key_event_queue.put("DOWN_PRESSED"))
+            keyboard.add_hotkey(key_keyboard["DOWN"], lambda: key_event_queue.put("DOWN_RELEASED"),
+                                trigger_on_release=True)
+            keyboard.add_hotkey(key_keyboard["LEFT"], lambda: key_event_queue.put("LEFT_PRESSED"))
+            keyboard.add_hotkey(key_keyboard["LEFT"], lambda: key_event_queue.put("LEFT_RELEASED"),
+                                trigger_on_release=True)
+            keyboard.add_hotkey(key_keyboard["RIGHT"], lambda: key_event_queue.put("RIGHT_PRESSED"))
+            keyboard.add_hotkey(key_keyboard["RIGHT"], lambda: key_event_queue.put("RIGHT_RELEASED"),
+                                trigger_on_release=True)
         else:
             button_enter = Button(key_gpio["ENTER"])
             button_enter.when_pressed = lambda: key_event_queue.put(KeyEvent["ENTER_PRESSED"])
             button_enter.when_released = lambda: key_event_queue.put(KeyEvent["ENTER_RELEASED"])
-            button_hooks.append(button_enter)
 
             button_up = Button(key_gpio["UP"])
             button_up.when_pressed = lambda: key_event_queue.put(KeyEvent["UP_PRESSED"])
             button_up.when_released = lambda: key_event_queue.put(KeyEvent["UP_RELEASED"])
-            button_hooks.append(button_up)
 
             button_down = Button(key_gpio["DOWN"])
             button_down.when_pressed = lambda: key_event_queue.put(KeyEvent["DOWN_PRESSED"])
             button_down.when_released = lambda: key_event_queue.put(KeyEvent["DOWN_RELEASED"])
-            button_hooks.append(button_down)
 
             button_left = Button(key_gpio["LEFT"])
             button_left.when_pressed = lambda: key_event_queue.put(KeyEvent["LEFT_PRESSED"])
             button_left.when_released = lambda: key_event_queue.put(KeyEvent["LEFT_RELEASED"])
-            button_hooks.append(button_left)
 
             button_right = Button(key_gpio["RIGHT"])
             button_right.when_pressed = lambda: key_event_queue.put(KeyEvent["RIGHT_PRESSED"])
             button_right.when_released = lambda: key_event_queue.put(KeyEvent["RIGHT_RELEASED"])
-            button_hooks.append(button_right)
-            logger.info(f"button_hooks={button_hooks}")
 
         # 显示初始画面
         ui_state = UIState.CHAT
