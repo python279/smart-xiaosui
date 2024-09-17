@@ -2,7 +2,7 @@ import os
 import logging
 import time
 from PIL import Image, ImageDraw, ImageFont
-from typing import List
+from typing import List, Union
 from dotenv import load_dotenv
 
 logger = logging.getLogger()
@@ -32,7 +32,9 @@ class Screen(object):
             self.disp.clear()
             self.disp.bl_DutyCycle(50)
 
-    def show_image(self, image: Image.Image):
+    def show_image(self, image: Union[Image.Image, str]):
+        if isinstance(image, str):
+            image = Image.open(image)
         self.disp.show_image(image)
 
     def show_gif(self, gif_path: str):

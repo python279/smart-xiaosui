@@ -116,6 +116,41 @@ class AudioRecorder:
             logger.info("录音结束...")
 
 
+class AudioVolumeControl:
+    def __init__(self):
+        self.volume = 100
+        if alsaaudio_available:
+            self.mixer = alsaaudio.Mixer("Speaker", 0)
+        self.set(self.volume)
+
+    def get(self):
+        if alsaaudio_available:
+            vol = self.mixer.getvolume()
+            vol = int(vol[0])
+        else:
+            vol = self.volume
+        return vol
+
+    def set(self, volume: int):
+        self.volume = volume
+        if alsaaudio_available:
+            self.mixer.setvolume(volume)
+
+    def up(self, step: int = 10):
+        vol = self.get() + step
+        if vol > 100:
+            vol = 100
+        self.set(vol)
+        return vol
+
+    def down(self, step: int = 10):
+        vol = self.get() - step
+        if vol < 0:
+            vol = 0
+        self.set(vol)
+        return vol
+
+
 if __name__ == '__main__':
     import os
     import sys

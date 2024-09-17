@@ -1,6 +1,10 @@
 import time
+from signal import pause
 from PIL import Image, ImageDraw, ImageFont
-from . import config
+try:
+    from . import config
+except ImportError:
+    import config
 
 
 class ST7789(config.RaspberryPi):
@@ -153,5 +157,4 @@ class ST7789(config.RaspberryPi):
         self.GPIO_BL_PIN.value = duty / 100
 
     def main_loop(self):
-        while True:
-            time.sleep(1)
+        pause()
