@@ -7,11 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 class Chat:
-    def __init__(self, url: str, model: str, api_key: str):
+    def __init__(self, url: str, model: str, api_key: str, max_conversation: int = 10):
         self.url = url
         self.model = model
         self.api_key = api_key
-        self.last_chat = None
+        self.last_conversation = []
+        self.max_conversation = max_conversation
         self.client = OpenAI(api_key=self.api_key, base_url=self.url)
 
     def __call__(self, system_prompt: str, user_prompt: str) -> str:
@@ -21,15 +22,16 @@ class Chat:
                 "content": system_prompt
             }
         ]
-        if self.last_chat is not None:
-            messages.append({
-                "role": "user",
-                "content": self.last_chat[0]
-            })
-            messages.append({
-                "role": "assistant",
-                "content": self.last_chat[1]
-            })
+        if self.last_conversation:
+            for (user_prompt, assistent_response) in self.last_conversation:
+                messages.append({
+                    "role": "user",
+                    "content": user_prompt
+                })
+                messages.append({
+                    "role": "assistant",
+                    "content": assistent_response
+                })
         messages.append({
                 "role": "user",
                 "content": user_prompt
@@ -41,7 +43,9 @@ class Chat:
             max_tokens=500 + len(user_prompt) + len(system_prompt)
         )
         content = completion.choices[0].message.content
-        self.last_chat = (user_prompt, content)
+        if len(self.last_conversation) > self.max_conversation:
+            self.last_conversation.pop(0)
+        self.last_conversation.append((user_prompt, content))
         return content
 
 

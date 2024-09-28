@@ -133,7 +133,7 @@ class TTSClient:
 
         data = {
             "common": {"app_id": self.app_id},
-            "business": {"aue": "raw", "auf": f"audio/L16;rate={rate}", "vcn": "x4_lingxiaoxuan_en_v2", "tte": "utf8", "speed": 50},
+            "business": {"aue": "raw", "auf": f"audio/L16;rate={rate}", "vcn": "x4_lingxiaolu_en", "tte": "utf8", "speed": 50},
             "data": {
                 "status": 2,
                 "text": str(base64.b64encode(text.encode('utf-8')), "UTF8")

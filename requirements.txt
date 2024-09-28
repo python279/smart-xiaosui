@@ -8,4 +8,5 @@ rpi.gpio
 pigpio
 spidev
 lgpio
+nmcli
 git+https://github.com/larsimmisch/pyalsaaudio.git
