@@ -1,19 +1,25 @@
 import os
 import sys
 import logging
+import json
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
 
 class Chat:
-    def __init__(self, url: str, model: str, api_key: str, max_conversation: int = 10):
+    def __init__(self, url: str, model: str, api_key: str, max_conversation: int = 10, history_path: str = None) -> None:
         self.url = url
         self.model = model
         self.api_key = api_key
-        self.last_conversation = []
+        self.history_path = history_path
         self.max_conversation = max_conversation
         self.client = OpenAI(api_key=self.api_key, base_url=self.url)
+        if self.history_path and os.path.exists(self.history_path):
+            with open(self.history_path, "r") as f:
+                self.last_conversation = json.load(f)
+        else:
+            self.last_conversation = []
 
     def __call__(self, system_prompt: str, user_prompt: str) -> str:
         messages = [
@@ -23,29 +29,33 @@ class Chat:
             }
         ]
         if self.last_conversation:
-            for (user_prompt, assistent_response) in self.last_conversation:
+            for (prompt, response) in self.last_conversation:
                 messages.append({
                     "role": "user",
-                    "content": user_prompt
+                    "content": prompt
                 })
                 messages.append({
                     "role": "assistant",
-                    "content": assistent_response
+                    "content": response
                 })
         messages.append({
                 "role": "user",
                 "content": user_prompt
             })
+        logger.info(f"Messages: {messages}")
         completion = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.1,
-            max_tokens=500 + len(user_prompt) + len(system_prompt)
+            max_tokens=500
         )
         content = completion.choices[0].message.content
         if len(self.last_conversation) > self.max_conversation:
             self.last_conversation.pop(0)
         self.last_conversation.append((user_prompt, content))
+        with open(self.history_path, "w") as f:
+            json.dump(self.last_conversation, f)
+            f.flush()
         return content
 
 

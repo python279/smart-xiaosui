@@ -81,7 +81,7 @@ class ASRClient:
 
     def on_message(self, ws: websocket.WebSocketApp, message: str) -> None:
         try:
-            if message == '':
+            if not message:
                 return
             response: dict = json.loads(message)
             code: int = response.get("code")

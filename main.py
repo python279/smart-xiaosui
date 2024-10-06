@@ -92,7 +92,8 @@ class App:
         # 初始化屏幕
         self.screen = Screen(simulate=(os.getenv("simulate_screen") == 'true'))
 
-        self.chat = Chat(url=os.getenv("openai_url"), model=os.getenv("openai_model"), api_key=os.getenv("openai_api_key"))
+        self.chat = Chat(url=os.getenv("openai_url"), model=os.getenv("openai_model"),
+                         api_key=os.getenv("openai_api_key"), history_path="/var/run/xiaosui/history.json")
         self.system_prompt = ('你现在作为一个可以实时语音对话的智能助手，名字是“小燧”。\n'
                               '你可以和用户聊天、回答问题、讲笑话、讲故事、唱歌、讲解知识等等。\n'
                               '你还可以解读用户拍的照片，你可以提示用户拍一张自拍照片，然后你可以描述一下用户的状态。\n'
@@ -156,14 +157,14 @@ class App:
         if user_prompt == "":
             return
 
-        self.tts = TTSClient(os.getenv("tts_ws_connect_timeout"),
-                        os.getenv("tts_app_id"),
-                        os.getenv("tts_api_key"),
-                        os.getenv("tts_api_secret"))
-
         # 文字对话
         assistent_response = self.chat(self.system_prompt, user_prompt)
         logger.info(f"assistent_response={assistent_response}")
+
+        self.tts = TTSClient(os.getenv("tts_ws_connect_timeout"),
+                             os.getenv("tts_app_id"),
+                             os.getenv("tts_api_key"),
+                             os.getenv("tts_api_secret"))
 
         # 文字转语音并播放
         self.tts(assistent_response, self.audio_player.play, rate=16000)
@@ -342,7 +343,7 @@ class App:
         self.show_image_with_banner("screen/image/topicon-chat.png")
         while True:
             try:
-                key_event = key_event_queue.get(timeout=10)
+                key_event = key_event_queue.get(timeout=20)
             except queue.Empty:
                 key_event = None
             logger.info(f"key_event={key_event}")
@@ -352,8 +353,10 @@ class App:
                 self.ui_state = UIState.CHAT
                 self.ui_level = 0
                 self.show_image_with_banner("screen/image/topicon-chat.png")
+                self.screen.disp.bl_DutyCycle(0)
                 continue
 
+            self.screen.disp.bl_DutyCycle(40)
             if self.ui_level == 0 and self.ui_state == UIState.CHAT:
                 if key_event == KeyEvent.ENTER_PRESSED:
                     self._start_recording()
@@ -433,6 +436,10 @@ if __name__ == "__main__":
         import keyboard
     else:
         from gpiozero import Button
+
+    workspace = "/var/run/xiaosui"
+    if not os.path.exists(workspace):
+        os.mkdir(workspace)
 
     app = App()
     app.run_forever()

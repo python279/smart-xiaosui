@@ -69,13 +69,14 @@ class TTSClient:
 
     def on_message(self, ws: websocket.WebSocketApp, message: str) -> None:
         try:
-            message = json.loads(message)
-            if message == '':
+            if not message:
                 return
+            message = json.loads(message)
             code = message["code"]
             sid = message["sid"]
             audio = message["data"].get("audio", "")
-            audio = base64.b64decode(audio)
+            if audio:
+                audio = base64.b64decode(audio)
             status = message["data"]["status"]
 
             if status == 2:

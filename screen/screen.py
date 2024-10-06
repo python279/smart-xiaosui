@@ -30,7 +30,7 @@ class Screen(object):
             self.disp = ST7789()
             self.disp.init()
             self.disp.clear()
-            self.disp.bl_DutyCycle(50)
+            self.disp.bl_DutyCycle(40)
 
     def show_image(self, image: Union[Image.Image, str]):
         if isinstance(image, str):
