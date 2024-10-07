@@ -93,7 +93,7 @@ class App:
         self.screen = Screen(simulate=(os.getenv("simulate_screen") == 'true'))
 
         self.chat = Chat(url=os.getenv("openai_url"), model=os.getenv("openai_model"),
-                         api_key=os.getenv("openai_api_key"), history_path="/var/run/xiaosui/history.json")
+                         api_key=os.getenv("openai_api_key"), history_path="history.json")
         self.system_prompt = ('你现在作为一个可以实时语音对话的智能助手，名字是“小燧”。\n'
                               '你可以和用户聊天、回答问题、讲笑话、讲故事、唱歌、讲解知识等等。\n'
                               '你还可以解读用户拍的照片，你可以提示用户拍一张自拍照片，然后你可以描述一下用户的状态。\n'
@@ -436,10 +436,6 @@ if __name__ == "__main__":
         import keyboard
     else:
         from gpiozero import Button
-
-    workspace = "/var/run/xiaosui"
-    if not os.path.exists(workspace):
-        os.mkdir(workspace)
 
     app = App()
     app.run_forever()
