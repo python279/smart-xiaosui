@@ -1,6 +1,6 @@
 # demo
 
-[![用树莓派DIY随身语音聊天小蜜，连刀郎的新歌她都知道](https://i.ytimg.com/vi/0uAuJgzIW3I/maxresdefault.jpg)](https://youtu.be/0uAuJgzIW3I "用树莓派DIY随身语音聊天小蜜，连刀郎的新歌她都知道")
+https://www.bilibili.com/video/BV1tECdYnEMP/
 
 # MacOS 开发环境配置
 
